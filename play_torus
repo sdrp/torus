@@ -1,0 +1,262 @@
+#!/usr/bin/env python
+
+# Torus Checkers
+# Sudheesha Perera
+# Spring 2016
+
+# Import all of the functions/modules from the torus script
+import torus 
+import sys
+import random
+
+# Definitions for two helper classes
+class Move:
+	def __init__(self, piece_to_move, board):
+		self.moves_list = [piece_to_move]
+		self.board = board 
+		self.is_simple_move = True # not a capture move
+
+class Board:
+	def __init__(self, red_pieces, white_pieces):
+		self.red_pieces = red_pieces
+		self.white_pieces = white_pieces 
+
+def prompt_game_mode():
+	print "\n\nWelcome to Torus Checkers!"
+	print "~~~~~~~~~~~~~~~~~~~~~~~~~~ \n"
+	print "Game Modes: "
+	print "1) Human vs AI"
+	print "2) AI vs AI"
+	print "Which game mode would you like? [1 or 2]"
+	game_mode = raw_input()
+	while game_mode not in ["1", "2", "x", "X"]:
+		print "\nPlease input 1 or 2 to select a game mode, or X to exit"
+		game_mode = raw_input()
+	if game_mode in ["1", "2"]:
+		return game_mode
+	else:
+		sys.exit()
+
+def prompt_AI_type(basic, weighted, basic_plus_random, fully_random):
+	print "\nWhat static evaluation function should be used? Options below:"
+	print "A) Basic: simple difference in cardinality (ie. who has more pieces)"
+	print "B) Weighted: weight the positions on the board, central locations more favorable"
+	print "C) Weighted Refined: liked option (B), but weighted additions never amount" 
+	print "to more than the value of a piece"
+	print " ie. the weights only serve to break ties that can result with option (A)"
+	print "D) Basic + Random: plays using the metric in (A), but every so often makes a random move"
+	print "E) Fully Random: move choice is entirely random"
+	print "\nPlease input your choice [A/B/C/D/E]:"
+	eval_func_choice = raw_input()
+	while eval_func_choice not in ["A", "B", "C", "D", "E"]:
+		print "\nPlease input A/B/C/D/E to select a static evaluation type, or X to exit"
+		eval_func_choice = raw_input()
+		if eval_func_choice in ["x", "X"]:
+			sys.exit()
+	# Map user's choice to the actual evaluations function
+	# Certain eval functions require additional input 
+	# Since Python doesn't have a "switch" statment, we use if's instead
+	if eval_func_choice == "A":
+		eval_func = basic
+	elif (eval_func_choice == "B") or (eval_func_choice == "C"):
+		# One of the weighted options
+		refined_bool = True if (eval_func_choice == "C") else False
+		# Get the weights as input
+		weights = [None, None, None, None]
+		sectors = ["center", "inner ring", "outer ring", "outer loop"]
+		for i in range(4):
+			while weights[i] == None:
+				try:
+					print "\nPlease enter a valid weight for pieces in the %s, or X to exit" % sectors[i]
+					w = raw_input()
+					if w in ["x", "X"]:
+						sys.exit()
+					weights[i] = float(w)
+				except:
+					continue
+		eval_func = weighted(weights, refined_bool)	
+	elif eval_func_choice == "D":
+		print "\nPick a value for p between 0 and 1."
+		print "This value represents the probability that the AI will make"
+		print "a random move rather than use cardinality as a heuristic."
+		p = None
+		while not((p >= 0) and (p <= 1)):
+			try:
+				print "\nPlease enter a number 0 and 1, or X to exit"
+				p = raw_input()
+				if p in ["x", "X"]:
+					sys.exit()
+				p = float(p)
+			except:
+				continue
+		eval_func = basic_plus_random(p)
+	else: # eval_func_choice == "E"
+		eval_func = fully_random 
+
+
+	print "\nNow choose a recursive depth. Enter an integer [1 - 7]."
+	print "Note that values above 4 will result in slow play."
+	recur_depth = raw_input()
+	while recur_depth not in ["1", "2", "3", "4", "5", "6", "7", "x", "X"]:
+		print "\nPlease input an integer [1 - 7], or X to exit"
+		recur_depth = raw_input()
+	if recur_depth in ["x", "X"]:
+		sys.exit()
+	
+	return (eval_func, int(recur_depth)) # A tuple of the game parameters
+	
+def prompt_output_option():
+	print "1) Visual Play: see the board state output at every turn"
+	print "2) Outcome Only: only output the result of the game"
+	print "\nPlease pick an output option [1 / 2]:"
+	output_option = raw_input()
+	while output_option not in ["1", "2", "x", "X"]:
+		print "\nPlease input 1 or 2, or X to exit"
+		output_option = raw_input()
+	if output_option in ["x", "X"]:
+		sys.exit()
+	else:
+		output_option = "PRINT_ON" if (output_option == "1") else "PRINT_OFF_TOTAL"
+	print "\nHow many games would you like to simulate?"
+	print "-------------------------------------------"
+	num_games = None
+	while num_games not in range(1, 51):
+		try:
+			print "\nPlease enter a number [1 - 50], or X to exit"
+			num_games = raw_input()
+			num_games = int(num_games)
+		except:
+			continue
+
+	return (output_option, num_games)
+		
+
+def play_checkers(red_eval_func, white_eval_func, search_depth_red, search_depth_white, print_option):
+	# Play a game of checkers and output who wins
+	# "print_option" is either the string "PRINT_ON" or "PRINT_OFF_TOTAL"
+
+	eval_func = {"red": red_eval_func, "white": white_eval_func}
+	search_depth = {"red": search_depth_red, "white": search_depth_white}
+
+	game_state = "MID_GAME"
+	# Make the first move based on the starting board configuration
+	(board_dim, max_turns, turns_so_far, player_to_move, board) = torus.parse_file("start_board_file")
+	(game_state, red_pieces, white_pieces) = torus.make_move(board_dim, max_turns, turns_so_far, "red", board, eval_func["red"], search_depth["red"], print_option)
+
+	while game_state == "MID_GAME": # The game is still going on 
+		(board_dim, max_turns, turns_so_far, player_to_move, board) = torus.parse_file("temp_board")
+		(game_state, red_pieces, white_pieces) = torus.make_move(board_dim, max_turns, turns_so_far, player_to_move, board, eval_func[player_to_move], search_depth[player_to_move], print_option)
+
+	return (game_state, red_pieces, white_pieces)
+
+###########################################################################################
+# The Static Evaluation Functions
+def basic(board):
+	# Simple difference in cardinality
+	return len(board.red_pieces) - len(board.white_pieces)
+
+def weighted(weights, refined_bool):
+	# Weight the positions on the board, central locations more favorable
+	center = [15, 18]
+	inner_ring = [10, 11, 14, 19, 22, 23]
+	outer_ring = [6, 7, 8, 9, 16, 17, 24, 25, 26, 27]
+	outer_loop = [1, 2, 3, 4, 5, 13, 21, 29, 30, 31, 32, 28, 20, 12]
+	
+	def weighting_func(x, weights):
+		if x in center:
+			return weights[0]
+		elif x in inner_ring:
+			return weights[1]
+		elif x in outer_ring:
+			return weights[2]
+		elif x in outer_loop:
+			return weights[3]
+
+	def evaluation(weights, red_pieces, white_pieces):
+		if refined_bool:
+			max_val = (max(weights) * 12) + 1
+			red_val = float(sum([weighting_func(piece, weights) for piece in red_pieces])) / (2 * max_val)
+			white_val = float(sum([weighting_func(piece, weights) for piece in white_pieces])) / (2 * max_val)
+			return (len(red_pieces) - len(white_pieces)) + (red_val - white_val) 		
+		else:	
+			red_val = sum([weighting_func(piece, weights) for piece in red_pieces])
+			white_val = sum([weighting_func(piece, weights) for piece in white_pieces])
+			return red_val - white_val
+
+	return lambda board: evaluation(weights, board.red_pieces, board.white_pieces)
+
+def weighted_refined(weights):
+	# Weight the positions on the board, central locations more favorable
+	# The weighted value addition never amounts to more than the value of a piece
+	# Ie. the weights are only used to break ties that result in the "basic" function
+	center = [15, 18]
+	inner_ring = [10, 11, 14, 19, 22, 23]
+	outer_ring = [6, 7, 8, 9, 16, 17, 24, 25, 26, 27]
+	outer_loop = [1, 2, 3, 4, 5, 13, 21, 29, 30, 31, 32, 28, 20, 12]
+	
+	def weighting_func(x, weights):
+		if x in center:
+			return weights[0]
+		elif x in inner_ring:
+			return weights[1]
+		elif x in outer_ring:
+			return weights[2]
+		elif x in outer_loop:
+			return weights[3]
+
+	def evaluation(weights, red_pieces, white_pieces):
+		max_val = (max(weights) * 12) + 1
+		red_val = float(sum([weighting_func(piece, weights) for piece in red_pieces])) / (2 * max_val)
+		white_val = float(sum([weighting_func(piece, weights) for piece in white_pieces])) / (2 * max_val)
+		return (len(red_pieces) - len(white_pieces)) + (red_val - white_val) 
+
+	return lambda board: evaluation(weights, board.red_pieces, board.white_pieces)
+
+def basic_plus_random(prob):
+	return lambda board: random.random() if random.random() < prob else float(basic(board) + 12) / 24
+	# Written in an imperative programming style below
+	# r = random.random()
+	# if r < prob:
+	# 	return random.random()
+	# else:
+	# 	normalized_val = float(basic(board) + 12) / 24 # between [0, 1]
+	# 	return normalized_val
+
+def fully_random(board):
+	return random.random()
+
+###########################################################################################
+print "\n\n"
+print "Welcome to Torus Checkers AI!"
+print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"
+print "First choose the parameters for Player 1 (Red)."
+print "-----------------------------------------------"
+(red_func, red_depth) = prompt_AI_type(basic, weighted, basic_plus_random, fully_random)
+print "\n\nNow do the same for Player 2 (White)"
+print "----------------------------------------"
+(white_func, white_depth) = prompt_AI_type(basic, weighted, basic_plus_random, fully_random)
+print "\n\nNow choose an output option."
+print "----------------------------"
+(output_opt, num_games) = prompt_output_option()
+
+if num_games == 1:
+	# Simulate a single game - no need to keep track of scores 
+	(outcome, red_pieces, white_pieces) = play_checkers(red_func, white_func, red_depth, white_depth, output_opt)
+	print outcome
+else:
+	# The user wants to simulate a number of games between the AIs
+	# Use the "leaderboard" map to keep track of wins/losses
+	leaderboard = {}
+	leaderboard["RED WON!"] = 0
+	leaderboard["WHITE WON!"] = 0
+	leaderboard["DRAW"] = 0
+	for i in range(num_games):
+		(outcome, red_pieces, white_pieces) = play_checkers(red_func, white_func, red_depth, white_depth, output_opt)
+		leaderboard[outcome] = leaderboard[outcome] + 1
+		print "Game %d: %s" % (i + 1, outcome)  
+	# Now print the results of the series of games
+	print "\n\n\nRESULTS"
+	print "------"
+	print "Red won %d game(s)." % leaderboard["RED WON!"]
+	print "White won %d game(s)." % leaderboard["WHITE WON!"]
+	print "The number of draws was %d." % leaderboard["DRAW"]
