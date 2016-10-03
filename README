@@ -88,7 +88,22 @@ Step 4) Testing the Weighted Function
 Now the question was whether I could figure out the set of weights that would result in optimal play. The weighted_refined function takes in a list of 4 floats, the first being the weight of the center two squares, the second being the weight of the surrounding inner right, the third being the weight of the outer ring, and the last being the weight of the outermost loop around the board. My intuition was that the weighting function should most heavily consider pieces at the center of the board, and give less value to those on the periphery. However, to my surprise the weighted input [4, 3, 2, 1] performed no better than the basic static evaluation function. Since my intuition was clearly off, I generated all weighted lists containing 0 and 1 (all 0/1 strings of length 4). This gave me 16 different versions of the weighted_refined function to play with.
 
 Here are my results:
-[0, 1, 0, 0].........Number of Wins = 6 [0, 1, 0, 1].........Number of Wins = 0 [0, 0, 1, 0].........Number of Wins = 8 [0, 0, 1, 1].........Number of Wins = 6 [1, 0, 1, 1].........Number of Wins = 4 [1, 0, 1, 0].........Number of Wins = 5 [1, 1, 1, 0].........Number of Wins = 2 [1, 1, 1, 1].........Number of Wins = 2 [0, 0, 0, 1].........Number of Wins = 4 [0, 0, 0, 0].........Number of Wins = 0 [0, 1, 1, 1].........Number of Wins = 6 [0, 1, 1, 0].........Number of Wins = 5 [1, 1, 0, 0].........Number of Wins = 4 [1, 0, 0, 0].........Number of Wins = 6 [1, 0, 0, 1].........Number of Wins = 4 [1, 1, 0, 1].........Number of Wins = 0
+[0, 1, 0, 0].........Number of Wins = 6 
+[0, 1, 0, 1].........Number of Wins = 0 
+[0, 0, 1, 0].........Number of Wins = 8 
+[0, 0, 1, 1].........Number of Wins = 6 
+[1, 0, 1, 1].........Number of Wins = 4 
+[1, 0, 1, 0].........Number of Wins = 5 
+[1, 1, 1, 0].........Number of Wins = 2 
+[1, 1, 1, 1].........Number of Wins = 2 
+[0, 0, 0, 1].........Number of Wins = 4 
+[0, 0, 0, 0].........Number of Wins = 0 
+[0, 1, 1, 1].........Number of Wins = 6 
+[0, 1, 1, 0].........Number of Wins = 5 
+[1, 1, 0, 0].........Number of Wins = 4 
+[1, 0, 0, 0].........Number of Wins = 6 
+[1, 0, 0, 1].........Number of Wins = 4 
+[1, 1, 0, 1].........Number of Wins = 0
 
 Keeping in mind that the maximum number of wins for any given set was 15 and that there were some draws, it is clear that no one set of weights was dominant. However, we find that the sets [1, 1, 1, 1] and [0, 0, 0, 0] performed quite poorly. In fact, the former failed to win a single game. This is encouraging because both of these weight sets essentially reduce the weighted_refined function to the basic function by providing uniformly proportional weights to all positions. From these results it appears that the weighting [0, 0, 1, 0] is the optimal 0/1 weighting scheme. If I were to re-visit the project, I would investigate more complicated weight distributions, involving non-binary weights and a more fine-grain breakdown of the locations on the board. Other location-weighting schemes could involve weightings for different diagonals on the board or different weightings for pieces that are stacked diagonally to avoid capture in the upcoming turn. 
 
