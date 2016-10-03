@@ -5,34 +5,29 @@ April 2016
 
 INTRO
 -----
-The directory contains two Python scripts: "torus.py" and "play_torus". The first executes a single move given an input board (mostly for spot-checking the AI algorithms), and the second simulates entire games between two opponents (either a human vs. an AI, or two AIs). Both can be run from the command line as executables or using the Python interpreter.
+The directory contains two Python scripts: "torus.py" and "play_torus". The first executes a single move given an input board (mostly for spot-checking the AI algorithms), and the second simulates entire games between to AI opponents. Both can be run from the command line as executables or using the Python interpreter. To jump in without wasting time with this README, download the repo and run ">> ./play_torus" from the command line. The script is interactive and will walk you through the full functionality of the program. 
 
-HOW TO RUN: ./play_torus
----------------------------
-From the command line, simply excecute the following:
-
-> ./play_torus
-
-Once execution begins, you will be prompted to choose the parameters of the game.
+BACKGROUND
+----------
+Torus checkers is a variant of the standard boardgame checkers. The main differentiating factor is from the pieces' perspective, the regular 8x8 board is connected in a torus. That is, its top and bottom are connects and its left and right sides are connect. Pieces that move off the top of the board re-appear at the bottom of the board, and pieces that move off of the left side of the board re-appear on the right side. Consequently there are no "kings" in torus checkers. The torus structure of the board makes for interesting winning strategies, and is a great model for investigating AI algorithms. Compared to regular checkers, there are vastly more possible moves from most board states and the strategy of play is less intuitive to people who have experience with standard checkers. 
 
 
+THE BOARD FILE FORMAT
+---------------------
 
-
-
-
+Consider the board file format below:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 g 8 8 100
 p 0 0
 r 12 1 2 3 4 5 6 7 8 9 10 11 12
 w 12 21 22 23 24 25 26 27 28 29 30 31 32
-An example game file for the initial position on a standard board. No comment character
-is required because all input after the fourth line is ignored.
+An example game file for the initial position on a standard board. No comment character is required because all input after the fourth line is ignored.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The file above refers to the first move to be played by red on a standard 8x8 board with a turn limit of 100. The pieces are laid out in their standard starting positions. For reference, this board file is located in the hand-in directory in a file named "start_board_file". This is the file used to start every game in "play_checkers_game.py".
+The format above stores all of the information needed to understand the state of a game at any given moment. This specific file encodes the start of a new game of torus checkers - it refers to the first move to be played by red on a standard 8x8 board with a turn limit of 100. The pieces are laid out in their standard starting positions. For reference, this board file is located in the a file named "start_board_file". This is the file used to start every game in "play_torus".
 
-The output of torus-150024951 is a single line containing first the letter "m", then the turn number, followed by the a 0/1 depending on whether red or white respectively are to move this turn. All subsequent integers represent the squares that the chosen piece touches from where it started until the end of the move. For a simple move or single capture we expect just two integers then (the original location of the piece and the square it was moved to). An example is below (take from handout):
+The output of "torus.py" is a single line containing first the letter "m", then the turn number, followed by the a 0/1 depending on whether red or white respectively are to move this turn. All subsequent integers represent the squares that the chosen piece touches from where it started until the end of the move. For a simple move or single capture we expect just two integers then (the original location of the piece and the square it was moved to). An example is below:
 ~~~~~~~~~~~
 m 0 0 12 13
 ~~~~~~~~~~~
@@ -58,13 +53,22 @@ Board After Move
 The {1} represents the square that the chosen red piece started on (ie. 9) and {R} represents the new location of the piece (ie. 14). In multi-capture moves, the previous locations of the chosen piece are number in order as {1}, {2}, {3}, etc. so that the direction of the move is easier to pick out. 
 
 
-HOW TO RUN: play_checkers_game.py
+
+HOW TO RUN: play_torus
+---------------------------
+From the command line, simply excecute the following:
+
+> ./play_torus
+
+Once execution begins, you will be prompted to choose the parameters of the game. This is an interactive script that will pit two AI algorithms against each other to see which is superior at playing torus checkers. All of the AI algorithms use an alpha-beta search to recursively determine the best move given the state of the board (alpha-beta search is an improvement on the more basic mini-max algorithm for two-player perfect information games). This script allows you to set the static evaluation function and recursive depth for each AI players. Note that while increasing the recursive depth will improve play to certain extent, it also dramatically increases the delay in returning the optimal move when the depth is set to a value greater than 4. 
+
+HOW TO RUN: torus.py
 ---------------------------------  
 From the command line, excecute the following:
 
-> python play_checkers_game.py
+> python torus.py path_to_board_file
 
-There are no command line arguments because this program acts more as a sandbox script than a stand-alone executable. Inside the script you'll find that it imports all of the functions in "torus-150024951" and compiles them into a single function "play_checkers()" that simulates an entire game of checkers from start to finish and outputs the winner. It also contains a handful of different static evaluation functions, which can be specified separately for the red and white player. This allows the script to simulate games between AI's with different strategies and even different search depths. More about how I experimented with these options can be found in the report PDF. 
+Here the only command line argument is the path to a board file in the format given above. Based on the state of the game encoded in the input board file, the program will execute the optimal move for the play whose turn it is (either red or white) and output the results to the console. Note that this script will by default use a recursive depth of 3 and a basic static evaluation function based on the number of pieces of each color left on the board. To experiment with other AI parameters, use the "play_torus" script instead. The intention in maintaining the two scripts is to separate the logic common to all of the AI algorithms from the specific static evaluation functions being compared and the implementation of having two AIs play each other. The "torus.py" file also acts as a convenient stop-gap to test for errors in implementation and spot-check the behavior of the program on specific boards of interest. 
 
 
 
